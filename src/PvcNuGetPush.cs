@@ -32,11 +32,17 @@ namespace PvcPlugins
             this.timeout = timeout.HasValue ? timeout : PvcNuGet.Timeout;
         }
 
+        public override string[] SupportedTags
+        {
+            get
+            {
+                return new[] { ".nupkg" };
+            }
+        }
+
         public override IEnumerable<PvcStream> Execute(IEnumerable<PvcStream> inputStreams)
         {
-            var packageStreams = inputStreams.Where(x => x.StreamName.EndsWith(".nupkg"));
-
-            foreach (var packageStream in packageStreams)
+            foreach (var packageStream in inputStreams)
             {
                 var isSymbolPackage = packageStream.StreamName.EndsWith(".symbols.nupkg");
                 var args = new List<string>(new[] {
@@ -65,7 +71,7 @@ namespace PvcPlugins
                     throw new PvcException("NuGet Push Error: " + errOutput);
             }
 
-            return inputStreams.Except(packageStreams);
+            return new PvcStream[] { };
         }
     }
 }

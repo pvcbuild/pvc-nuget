@@ -51,10 +51,16 @@ namespace PvcPlugins
             this.properties = properties;
         }
 
+        public override string[] SupportedTags
+        {
+            get
+            {
+                return new[] { ".csproj", ".vbproj", ".vcxproj", ".nuspec" };
+            }
+        }
+
         public override IEnumerable<PvcStream> Execute(IEnumerable<PvcStream> inputStreams)
         {
-            var nuspecAndProjectStreams = inputStreams.Where(x => Regex.IsMatch(x.StreamName, @"\.(.*proj|nuspec)$"));
-
             var nupkgFiles = new List<string>();
             var nupkgFilesCreated = 0;
             FileSystemWatcher watcher = new FileSystemWatcher(Directory.GetCurrentDirectory(), "*.nupkg");
@@ -69,7 +75,7 @@ namespace PvcPlugins
 
             watcher.EnableRaisingEvents = true;
 
-            foreach (var nuStream in nuspecAndProjectStreams)
+            foreach (var nuStream in inputStreams)
             {
                 var args = new List<string>(new[]{
                     "pack",
@@ -112,8 +118,8 @@ namespace PvcPlugins
             // wait for the watch to catch all the files created
             while (nupkgFiles.Count != (nupkgFilesCreated * (this.createSymbolsPackage ? 2 : 1))) { }
 
-            var nupkgStreams = nupkgFiles.Select(x => new PvcStream(new FileStream(x, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)).As(x));
-            return inputStreams.Except(nuspecAndProjectStreams).Concat(nupkgStreams);
+            var nupkgStreams = nupkgFiles.Select(x => new PvcStream(() => new FileStream(x, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)).As(x, Path.Combine(Directory.GetCurrentDirectory(), x)));
+            return nupkgStreams;
         }
     }
 }
